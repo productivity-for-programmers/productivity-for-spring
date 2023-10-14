@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"context"
+	"flag"
 	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -18,7 +18,7 @@ import (
 
 func Build() (bytes.Buffer, error) {
 	cmd := exec.Command("./gradlew", "build", "-x", "test")
-	cmd.Dir = projectDir
+	cmd.Dir = springDir
 	var b bytes.Buffer
 	cmd.Stdout = &b
 	cmd.Stderr = &b
@@ -41,7 +41,7 @@ func WaitForStartup() {
 	// We wrap this in a func() to make full use of defer to do cleanup when returning
 	checkhealth := func() bool {
 		retries++
-		req, err := http.NewRequest(http.MethodGet, "http://localhost:8080/actuator/health", nil)
+		req, err := http.NewRequest(http.MethodGet, baseUrl+healthCheckPath, nil)
 		if err != nil {
 			log.Printf("client: could not create request: %s", err)
 			return false
@@ -86,18 +86,21 @@ func NewSingleHostBodyBufReverseProxy(target *url.URL, key string) *httputil.Rev
 var lastBuild bytes.Buffer
 var lastBuildError error
 var buildRunning bool
-var projectDir string
+var springDir string
+var baseUrl string
+var healthCheckPath string
 
 func main() {
-	if len(os.Args) != 2 {
-		panic("Invalid arguments")
-	}
-	projectDir = os.Args[1]
+	flag.StringVar(&springDir, "spring-dir", ".", "Directory of the Spring Boot project")
+	flag.StringVar(&baseUrl, "base-url", "http://localhost:8080", "Base URL")
+	flag.StringVar(&healthCheckPath, "health-check-path", "/actuator/health", "Health Check Endpoint")
+
+	flag.Parse()
 	w := watcher.New()
 	w.SetMaxEvents(1)
 	r := regexp.MustCompile("^*.java$")
 	w.AddFilterHook(watcher.RegexFilterHook(r, false))
-	if err := w.AddRecursive(projectDir); err != nil {
+	if err := w.AddRecursive(springDir); err != nil {
 		log.Fatalln(err)
 	}
 	// for path, f := range w.WatchedFiles() {
@@ -132,7 +135,7 @@ func main() {
 		}
 	}()
 
-	remote, err := url.Parse("http://localhost:8080")
+	remote, err := url.Parse(baseUrl)
 	if err != nil {
 		panic(err)
 	}
