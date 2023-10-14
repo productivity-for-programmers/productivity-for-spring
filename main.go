@@ -30,31 +30,40 @@ func Build() (bytes.Buffer, error) {
 	return b, nil
 }
 
+var defaultclient = http.Client{
+	Timeout: 10 * time.Millisecond,
+}
+
 func WaitForStartup() {
 	time.Sleep(1400 * time.Millisecond)
-	for {
-		client := http.Client{
-			Timeout: 10 * time.Millisecond,
-		}
+	retries := 0
+
+	// We wrap this in a func() to make full use of defer to do cleanup when returning
+	checkhealth := func() bool {
+		retries++
 		req, err := http.NewRequest(http.MethodGet, "http://localhost:8080/actuator/health", nil)
-		if err == nil {
-			res, err := client.Do(req)
-			if err == nil {
-				if res.StatusCode == 200 {
-					resBody, err := io.ReadAll(res.Body)
-					if err == nil {
-						log.Printf("%s", string(resBody[:]))
-					}
-					break
-				} else {
-					log.Printf("client: status code: %s\n", err)
-				}
-			} else {
-				log.Printf("client: error making http request: %s\n", err)
-			}
-		} else {
-			log.Printf("client: could not create request: %s\n", err)
+		if err != nil {
+			log.Printf("client: could not create request: %s", err)
+			return false
 		}
+		res, err := defaultclient.Do(req)
+		if err != nil {
+			if retries%50 == 0 {
+				log.Printf("client: error making http request: %s", err)
+			}
+			return false
+		}
+		defer res.Body.Close() // Successful Do, so we need to close the body
+
+		if res.StatusCode == 200 {
+			return true
+		} else {
+			log.Printf("client: status code: %d", res.StatusCode)
+		}
+		return false
+	}
+
+	for !checkhealth() {
 		time.Sleep(100 * time.Millisecond)
 	}
 }
@@ -144,7 +153,6 @@ func main() {
 			} else {
 				r.Host = remote.Host
 				p.ServeHTTP(w, r)
-				log.Printf("Request Done")
 			}
 		}
 	}
