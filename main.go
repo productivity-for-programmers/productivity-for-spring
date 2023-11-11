@@ -17,7 +17,7 @@ import (
 )
 
 func Build() (bytes.Buffer, error) {
-	cmd := exec.Command("./gradlew", "build", "-x", "test")
+	cmd := exec.Command("bash", "-c", buildCommand)
 	cmd.Dir = springDir
 	var b bytes.Buffer
 	cmd.Stdout = &b
@@ -89,11 +89,13 @@ var buildRunning bool
 var springDir string
 var baseUrl string
 var healthCheckPath string
+var buildCommand string
 
 func main() {
 	flag.StringVar(&springDir, "spring-dir", ".", "Directory of the Spring Boot project")
 	flag.StringVar(&baseUrl, "base-url", "http://localhost:8080", "Base URL")
 	flag.StringVar(&healthCheckPath, "health-check-path", "/actuator/health", "Health Check Endpoint")
+	flag.StringVar(&buildCommand, "build-command", "./gradlew build -x test", "Build command")
 
 	flag.Parse()
 	w := watcher.New()
