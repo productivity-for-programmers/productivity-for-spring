@@ -35,6 +35,10 @@ var defaultclient = http.Client{
 }
 
 func WaitForStartup() {
+    // From: https://github.com/spring-projects/spring-boot/blob/main/spring-boot-project/spring-boot-devtools/src/main/java/org/springframework/boot/devtools/autoconfigure/DevToolsProperties.java
+    // The default pollInterval is 1 second and the default quietPeriod is 400ms.
+    // We sleep for 1400ms to give spring-boot-devtools enough time to catch the class file changes before we attempt
+    // to hit the health check.
 	time.Sleep(1400 * time.Millisecond)
 	retries := 0
 
