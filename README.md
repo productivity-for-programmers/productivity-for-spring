@@ -35,8 +35,10 @@ https://www.youtube.com/watch?v=0NwhHmFbJPk
 ## Limitations
 
 - Hardcoded to run on port 9000
+- Hardcoded to use bash to run the build command 
 - The rebuild needs to be triggered from this web server itself so that it knows exactly when the build process
   finishes and how long to wait before spring-boot-devtools will catch the class file changes and trigger a restart
 - Only listens to changes to .java files
 - Tested with Go 1.21.4
 - Tested with Spring Boot 3.1.4
+- Only tested on Linux
