@@ -1,8 +1,8 @@
 # productivity-for-spring
 Local development web server for Spring Boot that recompiles upon source file changes and pauses 
-connections while the Spring Boot project is recompiling/restarting. This ensures that the 
-- clients never gets an outdated response
-- clients never gets a connection refused error
+connections while the Spring Boot project is recompiling/restarting. This ensures that:
+- clients never get an outdated response
+- clients never get a connection refused error
  
 ## Usage
 
